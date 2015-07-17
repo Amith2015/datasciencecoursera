@@ -1,0 +1,77 @@
+Reproducible Research
+=====================
+
+ I.   **Loading and preprocessing the data:**
+
+```{r}
+activity.dat <- read.csv("./data_science/activity.csv")
+```
+II.  **What is mean total number of steps taken per day?**
+```{r} 
+activity.data<-activity.dat 
+activity.data[is.na(activity.data)] <- 0
+step.data <- aggregate(steps ~ date, activity.data, sum)
+row.num <- 1:61
+step.data1 <- cbind(row.num, step.data)
+barplot(step.data1$steps, names.arg=step.data1$row.num, ylim=c(0,25000), xlab = "Days during the month of 
+October and November(2012)", ylab = "Number of Steps",  space=0, col=rainbow(53), main=" Total number 
+of steps taken each day")
+summary(step.data$steps)
+```
+
+III. **What is the average daily activity pattern?**
+```{r}
+Average.Steps <- aggregate(steps ~ interval, data = activity.data, mean)
+plot(Average.Steps$interval, Average.Steps$steps , type = "l", main = "Time Series Plot of Average steps 
+taken", xlim = c(0,2500),    ylim = c(0,200), xlab="Time Interval of 5 seconds each", ylab="Average steps") 
+Average.Steps[Average.Steps$steps == max(Average.Steps$steps), 1]
+```
+So it is the 835th time interval that has the maximum average number of steps.
+
+IV. **Imputing missing values:**
+```{r}
+na.rows <- sum(is.na(activity.dat$steps))
+na.rows
+activity.monitor <- activity.dat
+for (i in 1:length(activity.monitor$steps)) {
+  if (is.na(activity.monitor$steps[i])) {
+      activity.monitor$steps[i] <- Average.Steps[Average.Steps$interval == activity.monitor$interval[i], 2]
+  }
+}
+activity.monitor$steps <- as.numeric(format(activity.monitor$steps, digits=3))
+step1.data <- aggregate(steps ~ date, activity.monitor, sum)  
+row.num1 <- 1:61 
+step2.data <- cbind(row.num1, step1.data)
+barplot(step2.data$steps, names.arg=step2.data$row.num1, ylim=c(0,25000), xlab = "Days during the month of 
+October and November(2012)", ylab = "Number of Steps", space=0, col=rainbow(61), main=" Total number of 
+steps taken each day after NA replacement")
+summary(step.data$steps)
+``` 
+Effect:
+```{r}
+summary(step2.data$steps)
+``` 
+The above difference in the summary outputs are the result of replacing all the NA's in the steps variable by their corresponding average in that particular time slice over the 2 month period of data taking.
+
+V.  **Are there differences in activity patterns between weekdays and weekends?**
+```{r}
+activity.week <- activity.monitor
+activity.week$date <- strptime(as.character(activity.week$date), "%Y-%m-%d")
+activity.week$date <- weekdays(activity.week$date)
+weekday <- c("Monday","Tuesday","Wednesday","Thursday","Friday")
+for(i in 1:length(activity.week$date)){
+  if(  activity.week$date[i] %in% weekday){
+      activity.week$date[i] <- "Weekday"        
+   }
+  else{
+      activity.week$date[i] <- "Weekend"
+  }
+}
+activity.week$date <- as.factor(activity.week$date)	 
+activity.week.mean <- aggregate(steps ~ interval+date, activity.week, mean)
+library(lattice)
+xyplot(steps ~ interval| date, data = activity.week.mean, type = "l", xlab = "Interval", 
+ylab = "Number of steps", layout=c(1,2))
+```
+
+Looking at the 2 panel plots, I find that the activity is more during weekday in the time interval of 500-1000. But for time > 1000, the activity during the weekend is more.
